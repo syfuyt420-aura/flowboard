@@ -24,12 +24,12 @@ function clearRefreshCookie(res: Response) {
 export const authController = {
   async signup(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, email, password } = req.body as { name: string; email: string; password: string };
-      const { user, accessToken, refreshToken } = await authService.signup(
-        name, email, password, req.ip, req.get('user-agent')
+      const { name, email, password, portal } = req.body as { name: string; email: string; password: string; portal?: 'admin' | 'member' };
+      const { user, workspaceRole, accessToken, refreshToken } = await authService.signup(
+        name, email, password, portal ?? 'admin', req.ip, req.get('user-agent')
       );
       setRefreshCookie(res, refreshToken);
-      sendSuccess(res, { user, accessToken, expiresIn: 15 * 60 }, 201);
+      sendSuccess(res, { user, workspaceRole, accessToken, expiresIn: 15 * 60 }, 201);
     } catch (err) { next(err); }
   },
 

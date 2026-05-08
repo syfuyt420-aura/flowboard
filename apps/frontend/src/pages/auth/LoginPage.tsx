@@ -120,7 +120,7 @@ export default function LoginPage() {
 
   async function handleSignup(values: SignupInput) {
     try {
-      const { data } = await api.post<{ data: { user: Parameters<typeof setUser>[0]; workspaceRole: UserRole; accessToken: string } }>('/auth/signup', values);
+      const { data } = await api.post<{ data: { user: Parameters<typeof setUser>[0]; workspaceRole: UserRole; accessToken: string } }>('/auth/signup', { ...values, portal: 'admin' });
       setAccessToken(data.data.accessToken);
       setUser(data.data.user, data.data.workspaceRole ?? 'OWNER');
       queryClient.setQueryData(QUERY_KEYS.auth.me, data.data.user);

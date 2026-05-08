@@ -9,10 +9,13 @@ import { useSocketStore } from '@/stores/socketStore';
 import { useUIStore } from '@/stores/uiStore';
 import { ACCESS_TOKEN_KEY } from '@/lib/constants';
 import { workspaceService } from '@/services/workspace.service';
+import { api } from '@/lib/axios';
 import CreateTaskModal from '@/components/features/create-task/CreateTaskModal';
+import type { UserRole } from '@flowboard/shared';
 
 export default function AppShell() {
   const user = useAuthStore((s) => s.user);
+  const setWorkspaceRole = useAuthStore((s) => s.setWorkspaceRole);
   const connect = useSocketStore((s) => s.connect);
   const disconnect = useSocketStore((s) => s.disconnect);
   const activeWorkspaceId = useUIStore((s) => s.activeWorkspaceId);
@@ -31,12 +34,21 @@ export default function AppShell() {
   useEffect(() => {
     if (!user || activeWorkspaceId) return;
     workspaceService.list().then(async (workspaces) => {
+      let wsId: string;
       if (workspaces.length > 0) {
-        setActiveWorkspaceId(workspaces[0].id);
+        wsId = workspaces[0].id;
+        setActiveWorkspaceId(wsId);
       } else {
         const ws = await workspaceService.create({ name: `${user.name}'s Workspace` });
-        setActiveWorkspaceId(ws.id);
+        wsId = ws.id;
+        setActiveWorkspaceId(wsId);
       }
+      // Fetch actual workspace role and update store
+      try {
+        const { data } = await api.get<{ data: Array<{ userId: string; role: string }> }>(`/workspaces/${wsId}/members`);
+        const me = data.data.find((m) => m.userId === user.id);
+        if (me) setWorkspaceRole(me.role as UserRole);
+      } catch { /* non-fatal */ }
     }).catch(console.error);
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 

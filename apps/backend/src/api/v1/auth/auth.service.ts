@@ -31,30 +31,45 @@ function signRefreshToken(sessionId: string): string {
 }
 
 export const authService = {
-  async signup(name: string, email: string, password: string, ipAddress?: string, userAgent?: string) {
+  async signup(name: string, email: string, password: string, portal: 'admin' | 'member' = 'admin', ipAddress?: string, userAgent?: string) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) throw AppError.conflict('Email already registered');
 
     const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
-    // Auto-activate: no email verification required
     const user = await prisma.user.create({
       data: { name, email, passwordHash, status: 'ACTIVE' },
     });
 
-    // Auto-join the most recently created workspace as MEMBER
-    const defaultWorkspace = await prisma.workspace.findFirst({
-      orderBy: { createdAt: 'desc' },
-    });
-    if (defaultWorkspace) {
-      await prisma.workspaceMember.upsert({
-        where: { workspaceId_userId: { workspaceId: defaultWorkspace.id, userId: user.id } },
-        create: { workspaceId: defaultWorkspace.id, userId: user.id, role: 'MEMBER' },
-        update: {},
+    let workspaceRole = 'MEMBER';
+
+    if (portal === 'admin') {
+      // Admin signup: create their own workspace and become OWNER
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 7);
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: `${name}'s Workspace`,
+          slug,
+          ownerId: user.id,
+          members: { create: { userId: user.id, role: 'OWNER' } },
+        },
       });
+      workspaceRole = 'OWNER';
+    } else {
+      // Member signup: auto-join the most recently created workspace
+      const defaultWorkspace = await prisma.workspace.findFirst({ orderBy: { createdAt: 'desc' } });
+      if (defaultWorkspace) {
+        try {
+          await prisma.workspaceMember.upsert({
+            where: { workspaceId_userId: { workspaceId: defaultWorkspace.id, userId: user.id } },
+            create: { workspaceId: defaultWorkspace.id, userId: user.id, role: 'MEMBER' },
+            update: {},
+          });
+        } catch { /* non-fatal */ }
+      }
     }
 
-    const tokens = await this.createSession(user.id, user.email, user.name, 'MEMBER', ipAddress, userAgent);
-    return { user, workspaceRole: 'MEMBER', ...tokens };
+    const tokens = await this.createSession(user.id, user.email, user.name, workspaceRole, ipAddress, userAgent);
+    return { user, workspaceRole, ...tokens };
   },
 
   async login(email: string, password: string, ipAddress?: string, userAgent?: string) {
