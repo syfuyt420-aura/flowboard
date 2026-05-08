@@ -59,7 +59,7 @@ function PostUpdateModal({ task, onClose }: UpdateModalProps) {
     mutationFn: (content: string) => tasksService.addComment(task.id, content),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task-comments', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'mine'] });
       setMessage('');
       toast.success('Update posted');
     },
@@ -70,7 +70,7 @@ function PostUpdateModal({ task, onClose }: UpdateModalProps) {
     mutationFn: (status: string) =>
       tasksService.update(task.id, { status: status as Task['status'] }),
     onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'mine'] });
       setNewStatus(updated.status as string);
       toast.success('Status updated');
     },
@@ -328,10 +328,11 @@ export default function MyTasksPage() {
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['my-tasks'],
+    queryKey: ['tasks', 'mine', user?.id],
     queryFn: () => tasksService.list({ assignee: user?.id, limit: 200 }),
     enabled: !!user?.id,
     select: (d) => d.data,
+    staleTime: 0,
   });
 
   const tasks = data ?? [];

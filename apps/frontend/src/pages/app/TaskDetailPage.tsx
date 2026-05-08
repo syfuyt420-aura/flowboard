@@ -189,7 +189,7 @@ export default function TaskDetailPage() {
     mutationFn: (payload: Partial<Task>) => tasksService.update(id!, payload),
     onSuccess: (updated) => {
       queryClient.setQueryData(QUERY_KEYS.tasks.detail(id!), updated);
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tasks.list(updated.projectId) });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task updated');
     },
     onError: () => toast.error('Failed to update task'),

@@ -46,7 +46,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   const { data: myTasksData } = useQuery({
-    queryKey: ['my-tasks'],
+    queryKey: ['tasks', 'mine', user?.id],
     queryFn: () => tasksService.list({ assignee: user?.id, limit: 200 }),
     enabled: !!user?.id,
     select: (d) => d.data,

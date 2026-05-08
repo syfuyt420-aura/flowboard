@@ -108,8 +108,8 @@ export default function CreateTaskModal({ open, onClose, projectId }: CreateTask
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         labelIds: [],
       }),
-    onSuccess: (task) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tasks.list(task.projectId) })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       toast.success('Task created successfully')
       onClose()
     },
