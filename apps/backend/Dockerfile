@@ -47,4 +47,4 @@ COPY --from=builder /app/package.json ./package.json
 EXPOSE 3001
 
 # Run DB schema sync then start server
-CMD ["sh", "-c", "cd apps/backend && npx prisma migrate deploy 2>/dev/null || npx prisma db push --accept-data-loss && cd /app && node apps/backend/dist/server.js"]
+CMD ["sh", "-c", "cd apps/backend && npx prisma db push --accept-data-loss && cd /app && node apps/backend/dist/server.js"]
