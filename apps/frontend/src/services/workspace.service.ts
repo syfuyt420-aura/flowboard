@@ -15,7 +15,10 @@ export const workspaceService = {
   },
 
   async create(payload: { name: string; slug?: string }): Promise<Workspace> {
-    const { data } = await api.post<{ data: Workspace }>('/workspaces', payload);
+    const slug = (payload.slug ?? payload.name)
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
+      + '-' + Math.random().toString(36).slice(2, 7);
+    const { data } = await api.post<{ data: Workspace }>('/workspaces', { ...payload, slug });
     return data.data;
   },
 
