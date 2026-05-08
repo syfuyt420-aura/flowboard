@@ -43,7 +43,6 @@ router.patch('/me', validateBody(updateProfileSchema), async (req, res, next) =>
         name: true,
         email: true,
         avatarUrl: true,
-        role: true,
         status: true,
         timezone: true,
         createdAt: true,
