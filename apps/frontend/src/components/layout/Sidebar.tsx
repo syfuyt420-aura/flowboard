@@ -14,6 +14,7 @@ import {
   Plus,
   Search,
   Inbox,
+  Building2,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ const ADMIN_NAV = [
   { to: '/app/tasks',       icon: CheckSquare,     label: 'Tasks' },
   { to: '/app/inbox',       icon: Bell,            label: 'Inbox' },
   { to: '/app/team',        icon: Users,           label: 'Team' },
+  { to: '/app/org-members', icon: Building2,       label: 'Members of Org' },
   { to: '/app/analytics',   icon: BarChart3,       label: 'Analytics' },
   { to: '/app/automations', icon: Zap,             label: 'Automations' },
 ];

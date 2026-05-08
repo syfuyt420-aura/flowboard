@@ -9,6 +9,7 @@ import type { AuthenticatedRequest } from '../../../middleware/authenticate';
 import { v4 as uuidv4 } from 'uuid';
 import { emailQueue } from '../../../workers/email.worker';
 import type { Prisma } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const router = Router();
 router.use(authenticate);
@@ -146,6 +147,60 @@ router.post('/:id/invite', validateBody(inviteMemberSchema), async (req, res, ne
 
     await emailQueue.add('workspace-invite', { to: email, workspaceName: workspace.name, token });
     sendSuccess(res, { message: 'Invitation sent' }, 201);
+  } catch (err) { next(err); }
+});
+
+// Admin creates a member account directly (name + email + password)
+router.post('/:id/members/create-account', async (req, res, next) => {
+  try {
+    const adminId = (req as unknown as AuthenticatedRequest).user.id;
+    const { name, email, password } = req.body as { name: string; email: string; password: string };
+
+    if (!name?.trim() || !email?.trim() || !password?.trim()) {
+      throw AppError.badRequest('Name, email and password are required');
+    }
+
+    // Only workspace admins/owners can create member accounts
+    const adminMember = await prisma.workspaceMember.findFirst({
+      where: { workspaceId: req.params.id, userId: adminId, role: { in: ['OWNER', 'ADMIN'] } },
+    });
+    if (!adminMember) throw AppError.forbidden('Only admins can create member accounts');
+
+    // Check if email already registered
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (existing) {
+      // Email exists — just add them to workspace if not already a member
+      const alreadyMember = await prisma.workspaceMember.findFirst({
+        where: { workspaceId: req.params.id, userId: existing.id },
+      });
+      if (alreadyMember) throw AppError.conflict('This email is already a workspace member');
+      await prisma.workspaceMember.create({
+        data: { workspaceId: req.params.id, userId: existing.id, role: 'MEMBER' },
+      });
+      const member = await prisma.workspaceMember.findFirst({
+        where: { workspaceId: req.params.id, userId: existing.id },
+        include: { user: { select: { id: true, name: true, email: true, avatarUrl: true, status: true } } },
+      });
+      return sendSuccess(res, { member, isExistingUser: true }, 201);
+    }
+
+    // Create new user account
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { name: name.trim(), email: email.toLowerCase().trim(), passwordHash, status: 'ACTIVE' },
+    });
+
+    // Add to workspace as MEMBER
+    await prisma.workspaceMember.create({
+      data: { workspaceId: req.params.id, userId: user.id, role: 'MEMBER' },
+    });
+
+    const member = await prisma.workspaceMember.findFirst({
+      where: { workspaceId: req.params.id, userId: user.id },
+      include: { user: { select: { id: true, name: true, email: true, avatarUrl: true, status: true } } },
+    });
+
+    sendSuccess(res, { member, isExistingUser: false }, 201);
   } catch (err) { next(err); }
 });
 

@@ -37,6 +37,7 @@ const WorkspaceSettingsPage = lazy(() => import('@/pages/app/WorkspaceSettingsPa
 const MyTasksPage = lazy(() => import('@/pages/app/MyTasksPage'));
 const ProjectUpdatesPage = lazy(() => import('@/pages/app/ProjectUpdatesPage'));
 const AllTasksPage = lazy(() => import('@/pages/app/AllTasksPage'));
+const OrgMembersPage = lazy(() => import('@/pages/app/OrgMembersPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -128,6 +129,7 @@ export default function App() {
               <Route path="settings" element={<SettingsPage />} />
               <Route path="workspace/settings" element={<WorkspaceSettingsPage />} />
               <Route path="my-tasks" element={<MyTasksPage />} />
+              <Route path="org-members" element={<OrgMembersPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
