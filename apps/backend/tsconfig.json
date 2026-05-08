@@ -14,8 +14,7 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@flowboard/shared": ["../../packages/shared/src/index.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
