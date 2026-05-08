@@ -1,9 +1,7 @@
 import { Bell, Moon, Sun, Monitor } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
-import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +15,7 @@ import { api, clearAccessToken } from '@/lib/axios';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 export default function Header() {
   const theme = useUIStore((s) => s.theme);
@@ -43,31 +42,33 @@ export default function Header() {
       clearAccessToken();
       logout();
       navigate('/login');
-      toast.success('Signed out successfully');
+      toast.success('Signed out');
     }
   };
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
 
   return (
-    <header className="flex h-14 items-center justify-end gap-2 border-b bg-card/80 backdrop-blur-sm px-4">
-      {/* Theme Toggle */}
+    <header className="flex h-11 items-center justify-end gap-1 border-b border-border/60 bg-background px-3">
+      {/* Theme */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground">
-            <ThemeIcon className="h-4 w-4" />
-          </Button>
+          <button className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-75">
+            <ThemeIcon className="h-3.5 w-3.5" />
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-36">
-          <DropdownMenuLabel>Theme</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Appearance</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {(['light', 'dark', 'system'] as const).map((t) => (
             <DropdownMenuItem
               key={t}
               onClick={() => setTheme(t)}
-              className={theme === t ? 'bg-accent' : ''}
+              className={cn('text-sm', theme === t && 'bg-accent font-medium')}
             >
-              {t === 'light' ? <Sun className="mr-2 h-4 w-4" /> : t === 'dark' ? <Moon className="mr-2 h-4 w-4" /> : <Monitor className="mr-2 h-4 w-4" />}
+              {t === 'light' ? <Sun className="mr-2 h-3.5 w-3.5" />
+                : t === 'dark' ? <Moon className="mr-2 h-3.5 w-3.5" />
+                : <Monitor className="mr-2 h-3.5 w-3.5" />}
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </DropdownMenuItem>
           ))}
@@ -75,46 +76,45 @@ export default function Header() {
       </DropdownMenu>
 
       {/* Notifications */}
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        className="relative text-muted-foreground"
+      <button
+        className="relative flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-75"
         onClick={() => navigate('/app/inbox')}
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-3.5 w-3.5" />
         {unreadCount != null && unreadCount > 0 && (
-          <Badge
-            variant="destructive"
-            className="absolute -right-1 -top-1 h-4 min-w-4 px-1 py-0 text-[10px]"
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </Badge>
+          <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-primary" />
         )}
-      </Button>
+      </button>
 
-      {/* User Menu */}
+      {/* Divider */}
+      <div className="mx-1 h-4 w-px bg-border/60" />
+
+      {/* User menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 rounded-xl p-1 transition-colors hover:bg-accent">
-            {user && <UserAvatar name={user.name} src={user.avatarUrl} size="sm" />}
+          <button className="flex items-center gap-1.5 rounded px-1.5 py-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-75">
+            {user && <UserAvatar name={user.name} src={user.avatarUrl} size="xs" />}
+            {user && (
+              <span className="text-[13px] font-medium text-foreground hidden sm:block">{user.name}</span>
+            )}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           {user && (
             <div className="px-2 py-1.5">
-              <p className="font-medium text-sm">{user.name}</p>
+              <p className="text-sm font-medium">{user.name}</p>
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate('/app/settings')}>
-            Profile Settings
+          <DropdownMenuItem className="text-[13px]" onClick={() => navigate('/app/settings')}>
+            Profile settings
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate('/app/workspace/settings')}>
-            Workspace Settings
+          <DropdownMenuItem className="text-[13px]" onClick={() => navigate('/app/workspace/settings')}>
+            Workspace settings
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+          <DropdownMenuItem className="text-[13px] text-destructive focus:text-destructive" onClick={handleLogout}>
             Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>

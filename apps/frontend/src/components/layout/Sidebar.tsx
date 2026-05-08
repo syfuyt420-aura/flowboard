@@ -20,24 +20,33 @@ import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { UserAvatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { tasksService } from '@/services/tasks.service';
 
 const NAV_ITEMS = [
-  { to: '/app/dashboard', icon: LayoutDashboard, labelKey: 'navigation.dashboard', label: 'Dashboard' },
-  { to: '/app/my-tasks', icon: Inbox, labelKey: 'navigation.myTasks', label: 'My Tasks' },
-  { to: '/app/projects', icon: FolderKanban, labelKey: 'navigation.projects', label: 'Projects' },
-  { to: '/app/tasks', icon: CheckSquare, labelKey: 'navigation.tasks', label: 'Tasks' },
-  { to: '/app/inbox', icon: Bell, labelKey: 'navigation.inbox', label: 'Inbox' },
-  { to: '/app/team', icon: Users, labelKey: 'navigation.team', label: 'Team' },
-  { to: '/app/analytics', icon: BarChart3, labelKey: 'navigation.analytics', label: 'Analytics' },
-  { to: '/app/automations', icon: Zap, labelKey: 'navigation.automations', label: 'Automations' },
+  { to: '/app/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/app/my-tasks',    icon: Inbox,           label: 'My Tasks' },
+  { to: '/app/projects',    icon: FolderKanban,    label: 'Projects' },
+  { to: '/app/tasks',       icon: CheckSquare,     label: 'Tasks' },
+  { to: '/app/inbox',       icon: Bell,            label: 'Inbox' },
+  { to: '/app/team',        icon: Users,           label: 'Team' },
+  { to: '/app/analytics',   icon: BarChart3,       label: 'Analytics' },
+  { to: '/app/automations', icon: Zap,             label: 'Automations' },
 ];
 
+function SideTooltip({ label }: { label: string }) {
+  return (
+    <div className="pointer-events-none hidden group-hover:flex absolute left-full ml-2.5 top-1/2 -translate-y-1/2 z-[200] items-center">
+      <div className="h-1.5 w-1.5 rotate-45 bg-foreground -mr-0.5 flex-shrink-0 rounded-[1px]" />
+      <span className="bg-foreground text-background text-xs font-medium px-2.5 py-1.5 rounded-md whitespace-nowrap shadow-md">
+        {label}
+      </span>
+    </div>
+  );
+}
 
 export default function Sidebar() {
-  const { t } = useTranslation();
+  useTranslation();
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const openCommandPalette = useUIStore((s) => s.openCommandPalette);
@@ -57,80 +66,91 @@ export default function Sidebar() {
 
   return (
     <motion.aside
-      className="relative flex h-full flex-col border-r bg-card flex-shrink-0"
-      animate={{ width: collapsed ? 64 : 224 }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
+      className="relative flex h-full flex-col border-r border-border/60 bg-secondary/40"
+      animate={{ width: collapsed ? 52 : 240 }}
+      transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
     >
-      {/* Logo + toggle always in header */}
-      <div className="flex h-14 items-center border-b px-3 gap-2">
-        {/* F icon — always visible */}
-        <div className="h-7 w-7 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+      {/* Workspace header */}
+      <div className={cn(
+        'flex h-11 items-center border-b border-border/60 px-2 gap-1.5',
+        collapsed && 'justify-center'
+      )}>
+        {/* Logo mark */}
+        <div className="h-6 w-6 rounded-md bg-foreground flex items-center justify-center text-background font-bold text-xs flex-shrink-0">
           F
         </div>
 
-        {/* "FlowBoard" text — only when expanded */}
         {!collapsed && (
           <motion.span
-            className="font-display font-bold text-base flex-1 truncate"
+            className="flex-1 text-sm font-semibold text-foreground truncate"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.12 }}
           >
             FlowBoard
           </motion.span>
         )}
 
-        {/* Toggle button — always visible, changes direction */}
-        <Button
-          variant="ghost"
-          size="icon-sm"
+        {/* Toggle */}
+        <button
           onClick={toggleSidebar}
-          className={cn('text-muted-foreground flex-shrink-0', collapsed && 'mx-auto')}
+          className={cn(
+            'flex h-6 w-6 items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors flex-shrink-0',
+            collapsed && 'ml-0'
+          )}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
+          {collapsed
+            ? <ChevronRight className="h-3.5 w-3.5" />
+            : <ChevronLeft className="h-3.5 w-3.5" />
+          }
+        </button>
       </div>
 
-      {/* Search / Command */}
-      <div className="px-2 py-3">
-        <div className={cn('relative group', collapsed && 'flex justify-center')}>
+      {/* Actions */}
+      <div className="px-1.5 py-1.5 space-y-0.5">
+        {/* Search */}
+        <div className="relative group">
           <button
             onClick={openCommandPalette}
             className={cn(
-              'flex w-full items-center gap-2 rounded-xl border border-dashed bg-muted/50 px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-              collapsed && 'justify-center w-10 h-10 p-0'
+              'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-75',
+              collapsed && 'justify-center px-1.5'
             )}
           >
             <Search className="h-4 w-4 flex-shrink-0" />
             {!collapsed && (
               <>
-                <span className="flex-1 text-left">Search…</span>
-                <kbd className="ml-auto hidden rounded-md border bg-background px-1.5 py-0.5 text-[10px] font-mono sm:block">
-                  ⌘K
-                </kbd>
+                <span className="flex-1 text-left text-[13px]">Search</span>
+                <kbd className="text-[10px] text-muted-foreground/60 font-mono bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
               </>
             )}
           </button>
-          {collapsed && (
-            <div className="hidden group-hover:flex absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 items-center">
-              <div className="h-1.5 w-1.5 rotate-45 bg-foreground/90 -mr-0.5 flex-shrink-0" />
-              <span className="bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
-                Search (⌘K)
-              </span>
-            </div>
-          )}
+          {collapsed && <SideTooltip label="Search  ⌘K" />}
+        </div>
+
+        {/* New Task */}
+        <div className="relative group">
+          <button
+            onClick={() => openCreateTask()}
+            className={cn(
+              'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-75',
+              collapsed && 'justify-center px-1.5'
+            )}
+          >
+            <Plus className="h-4 w-4 flex-shrink-0" />
+            {!collapsed && <span className="text-[13px]">New Task</span>}
+          </button>
+          {collapsed && <SideTooltip label="New Task" />}
         </div>
       </div>
 
+      {/* Divider */}
+      <div className="mx-2 border-t border-border/60" />
+
       {/* Nav */}
-      <nav className="flex-1 space-y-0.5 px-2 overflow-y-auto scrollbar-thin">
-        {NAV_ITEMS.map(({ to, icon: Icon, labelKey, label }) => {
+      <nav className="flex-1 overflow-y-auto scrollbar-thin px-1.5 py-1.5 space-y-0.5">
+        {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
           const isMyTasks = to === '/app/my-tasks';
           const badge = isMyTasks && pendingCount > 0 ? pendingCount : null;
           return (
@@ -139,110 +159,68 @@ export default function Sidebar() {
                 to={to}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors',
+                    'flex items-center gap-2 rounded px-2 py-1.5 text-[13px] transition-colors duration-75',
                     isActive
-                      ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+                      ? 'bg-accent text-foreground font-medium'
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                    collapsed && 'justify-center px-2'
+                    collapsed && 'justify-center px-1.5'
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
                     <div className="relative flex-shrink-0">
-                      <Icon
-                        className={cn(
-                          'h-4 w-4',
-                          isActive ? 'text-brand-600 dark:text-brand-400' : 'text-muted-foreground'
-                        )}
-                      />
+                      <Icon className={cn('h-4 w-4', isActive ? 'text-foreground' : 'text-muted-foreground/70')} />
                       {badge && collapsed && (
-                        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 flex items-center justify-center rounded-full bg-brand-500 text-white text-[8px] font-bold">
+                        <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[8px] font-bold">
                           {badge > 9 ? '9+' : badge}
                         </span>
                       )}
                     </div>
                     {!collapsed && (
-                      <span className="flex-1">{t(labelKey)}</span>
-                    )}
-                    {!collapsed && badge && (
-                      <span className="ml-auto text-[10px] font-bold bg-brand-500 text-white rounded-full px-1.5 py-0.5 min-w-[20px] text-center leading-none">
-                        {badge > 99 ? '99+' : badge}
-                      </span>
+                      <>
+                        <span className="flex-1">{label}</span>
+                        {badge && (
+                          <span className="text-[10px] font-semibold bg-primary/10 text-primary rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                            {badge > 99 ? '99+' : badge}
+                          </span>
+                        )}
+                      </>
                     )}
                   </>
                 )}
               </NavLink>
-
-              {/* Tooltip shown only when collapsed */}
-              {collapsed && (
-                <div className="pointer-events-none hidden group-hover:flex absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 items-center">
-                  <div className="h-1.5 w-1.5 rotate-45 bg-foreground/90 -mr-0.5 flex-shrink-0" />
-                  <span className="bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
-                    {badge ? `${label} (${badge})` : label}
-                  </span>
-                </div>
-              )}
+              {collapsed && <SideTooltip label={badge ? `${label} (${badge})` : label} />}
             </div>
           );
         })}
       </nav>
 
-      {/* Quick Create */}
-      <div className="px-2 pb-2">
-        <div className="relative group">
-          <Button
-            variant="brand"
-            size={collapsed ? 'icon' : 'default'}
-            className="w-full"
-            onClick={() => openCreateTask()}
-          >
-            <Plus className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">New Task</span>}
-          </Button>
-          {collapsed && (
-            <div className="pointer-events-none hidden group-hover:flex absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 items-center">
-              <div className="h-1.5 w-1.5 rotate-45 bg-foreground/90 -mr-0.5 flex-shrink-0" />
-              <span className="bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
-                New Task
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Divider */}
+      <div className="mx-2 border-t border-border/60" />
 
-      {/* User Footer */}
-      <div className="border-t p-2">
+      {/* User footer */}
+      <div className="px-1.5 py-1.5">
         <div className="relative group">
           <NavLink
             to="/app/settings"
             className={cn(
-              'flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-accent',
+              'flex items-center gap-2 rounded px-2 py-1.5 transition-colors duration-75 hover:bg-accent',
               location.pathname === '/app/settings' && 'bg-accent',
-              collapsed && 'justify-center'
+              collapsed && 'justify-center px-1.5'
             )}
           >
-            {user && (
-              <UserAvatar name={user.name} src={user.avatarUrl} size="sm" />
-            )}
+            {user && <UserAvatar name={user.name} src={user.avatarUrl} size="xs" />}
             {!collapsed && user && (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{user.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-              </div>
-            )}
-            {!collapsed && (
-              <Settings className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+              <>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-foreground truncate">{user.name}</p>
+                </div>
+                <Settings className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/50" />
+              </>
             )}
           </NavLink>
-          {collapsed && user && (
-            <div className="pointer-events-none hidden group-hover:flex absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 items-center">
-              <div className="h-1.5 w-1.5 rotate-45 bg-foreground/90 -mr-0.5 flex-shrink-0" />
-              <span className="bg-foreground/90 text-background text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
-                {user.name} · Settings
-              </span>
-            </div>
-          )}
+          {collapsed && user && <SideTooltip label={`${user.name} · Settings`} />}
         </div>
       </div>
     </motion.aside>
