@@ -1,6 +1,6 @@
 import { prisma } from '../../../lib/prisma';
 import type { Prisma } from '@prisma/client';
-import { cacheGet, cacheSet, cacheDel, CACHE_TTL } from '../../../lib/redis';
+import { cacheGet, cacheSet, cacheDelPattern, CACHE_TTL } from '../../../lib/redis';
 import { AppError } from '../../../utils/AppError';
 import type { CreateTaskInput, UpdateTaskInput, MoveTaskInput } from '@flowboard/shared';
 
@@ -181,7 +181,7 @@ export const tasksService = {
       return t;
     });
 
-    await cacheDel(`tasks:list:*`);
+    await cacheDelPattern(`tasks:list:*`);
     return taskMapper(task);
   },
 
@@ -238,7 +238,7 @@ export const tasksService = {
       return t;
     });
 
-    await cacheDel(`tasks:list:*`);
+    await cacheDelPattern(`tasks:list:*`);
     return taskMapper(updated);
   },
 
@@ -256,7 +256,7 @@ export const tasksService = {
         userId,
       },
     });
-    await cacheDel(`tasks:list:*`);
+    await cacheDelPattern(`tasks:list:*`);
   },
 
   async move(id: string, input: MoveTaskInput, userId: string) {
@@ -284,7 +284,7 @@ export const tasksService = {
       },
     });
 
-    await cacheDel(`tasks:list:*`);
+    await cacheDelPattern(`tasks:list:*`);
     return taskMapper(updated);
   },
 

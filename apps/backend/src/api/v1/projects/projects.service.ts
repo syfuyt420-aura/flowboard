@@ -1,6 +1,6 @@
 import { prisma } from '../../../lib/prisma';
 import type { Prisma } from '@prisma/client';
-import { cacheGet, cacheSet, cacheDel, CACHE_TTL } from '../../../lib/redis';
+import { cacheGet, cacheSet, cacheDel, cacheDelPattern, CACHE_TTL } from '../../../lib/redis';
 import { AppError } from '../../../utils/AppError';
 import type { CreateProjectInput, UpdateProjectInput } from '@flowboard/shared';
 
@@ -148,7 +148,7 @@ export const projectsService = {
       return p;
     });
 
-    await cacheDel(`projects:list:${input.workspaceId}:${ownerId}:*`);
+    await cacheDelPattern(`projects:list:${input.workspaceId}:*`);
     return { ...project, taskCount: 0, completedTaskCount: 0, memberCount: 1 };
   },
 
@@ -202,7 +202,7 @@ export const projectsService = {
       },
     });
 
-    await cacheDel(`projects:list:${project.workspaceId}:*`);
+    await cacheDelPattern(`projects:list:${project.workspaceId}:*`);
     return {
       ...updated,
       taskCount: updated._count.tasks,
@@ -225,7 +225,7 @@ export const projectsService = {
       data: { deletedAt: new Date() },
     });
 
-    await cacheDel(`projects:list:${project.workspaceId}:*`);
+    await cacheDelPattern(`projects:list:${project.workspaceId}:*`);
   },
 
   async getMembers(projectId: string) {

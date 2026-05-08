@@ -25,16 +25,16 @@ export default function AppShell() {
   }, [user, connect, disconnect]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || activeWorkspaceId) return;
     workspaceService.list().then(async (workspaces) => {
       if (workspaces.length > 0) {
-        if (!activeWorkspaceId) setActiveWorkspaceId(workspaces[0].id);
+        setActiveWorkspaceId(workspaces[0].id);
       } else {
         const ws = await workspaceService.create({ name: `${user.name}'s Workspace` });
         setActiveWorkspaceId(ws.id);
       }
-    }).catch(() => {});
-  }, [user, activeWorkspaceId, setActiveWorkspaceId]);
+    }).catch(console.error);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

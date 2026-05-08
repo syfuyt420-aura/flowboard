@@ -106,10 +106,23 @@ export default function ProjectsPage() {
       navigate(`/app/projects/${project.id}/settings`);
       toast.success('Project created');
     },
-    onError: () => toast.error('Failed to create project'),
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? 'Failed to create project';
+      toast.error(msg);
+    },
   });
 
   const projects = data?.data ?? [];
+
+  const handleNewProject = () => {
+    if (!workspaceId) {
+      toast.error('Workspace is still loading. Please wait a moment and try again.');
+      return;
+    }
+    createMutation.mutate();
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -122,7 +135,7 @@ export default function ProjectsPage() {
         </div>
         <Button
           variant="brand"
-          onClick={() => createMutation.mutate()}
+          onClick={handleNewProject}
           loading={createMutation.isPending}
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -170,7 +183,7 @@ export default function ProjectsPage() {
             <p className="text-sm text-muted-foreground mt-1 mb-4">
               Create your first project to start organizing work.
             </p>
-            <Button variant="brand" onClick={() => createMutation.mutate()}>
+            <Button variant="brand" onClick={handleNewProject}>
               <Plus className="mr-2 h-4 w-4" />
               Create Project
             </Button>
