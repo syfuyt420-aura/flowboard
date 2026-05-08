@@ -41,9 +41,19 @@ export const authService = {
       data: { name, email, passwordHash, status: 'ACTIVE' },
     });
 
-    // Immediately create a session so the user is logged in after signup
-    const tokens = await this.createSession(user.id, user.email, user.name, 'MEMBER', ipAddress, userAgent);
+    // Auto-join the most recently created workspace as MEMBER
+    const defaultWorkspace = await prisma.workspace.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
+    if (defaultWorkspace) {
+      await prisma.workspaceMember.upsert({
+        where: { workspaceId_userId: { workspaceId: defaultWorkspace.id, userId: user.id } },
+        create: { workspaceId: defaultWorkspace.id, userId: user.id, role: 'MEMBER' },
+        update: {},
+      });
+    }
 
+    const tokens = await this.createSession(user.id, user.email, user.name, 'MEMBER', ipAddress, userAgent);
     return { user, workspaceRole: 'MEMBER', ...tokens };
   },
 

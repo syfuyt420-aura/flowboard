@@ -80,9 +80,42 @@ router.get('/:id/members', async (req, res, next) => {
   try {
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId: req.params.id },
-      include: { user: { select: { id: true, name: true, email: true, avatarUrl: true, status: true } } },
+      include: { user: { select: { id: true, name: true, email: true, avatarUrl: true, status: true, createdAt: true, lastLoginAt: true } } },
+      orderBy: { joinedAt: 'asc' },
     });
-    sendSuccess(res, members);
+
+    // Attach task stats per member
+    const memberIds = members.map(m => m.userId);
+    const taskStats = await prisma.taskAssignee.groupBy({
+      by: ['userId'],
+      where: { userId: { in: memberIds }, task: { deletedAt: null } },
+      _count: { taskId: true },
+    });
+    const doneStats = await prisma.taskAssignee.groupBy({
+      by: ['userId'],
+      where: { userId: { in: memberIds }, task: { deletedAt: null, status: 'DONE' } },
+      _count: { taskId: true },
+    });
+    const inProgressStats = await prisma.taskAssignee.groupBy({
+      by: ['userId'],
+      where: { userId: { in: memberIds }, task: { deletedAt: null, status: 'IN_PROGRESS' } },
+      _count: { taskId: true },
+    });
+
+    const statsMap = Object.fromEntries(taskStats.map(s => [s.userId, s._count.taskId]));
+    const doneMap = Object.fromEntries(doneStats.map(s => [s.userId, s._count.taskId]));
+    const inProgressMap = Object.fromEntries(inProgressStats.map(s => [s.userId, s._count.taskId]));
+
+    const enriched = members.map(m => ({
+      ...m,
+      taskStats: {
+        assigned: statsMap[m.userId] ?? 0,
+        done: doneMap[m.userId] ?? 0,
+        inProgress: inProgressMap[m.userId] ?? 0,
+      },
+    }));
+
+    sendSuccess(res, enriched);
   } catch (err) { next(err); }
 });
 
