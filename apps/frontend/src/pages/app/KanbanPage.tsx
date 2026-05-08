@@ -274,6 +274,8 @@ export default function KanbanPage() {
     queryFn: () => tasksService.list({ projectId, limit: 200 }),
     enabled: !!projectId,
     select: (d) => d.data,
+    refetchInterval: 15000,      // poll every 15s so admin sees member updates
+    refetchIntervalInBackground: false,
   });
 
   const tasks = localTasks ?? data ?? [];

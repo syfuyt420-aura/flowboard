@@ -77,6 +77,8 @@ export default function TaskListPage() {
     queryKey: [...QUERY_KEYS.tasks.list(projectId), search, statusFilter],
     queryFn: () => tasksService.list({ projectId, search, status: statusFilter || undefined, limit: 100 }),
     select: (d) => d.data,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
   });
 
   const updateMutation = useMutation({

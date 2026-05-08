@@ -260,6 +260,8 @@ export default function TaskTablePage() {
     queryFn: () => tasksService.list({ projectId, limit: 200, search: search || undefined }),
     enabled: !!projectId,
     select: (d) => d.data,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: project } = useQuery({

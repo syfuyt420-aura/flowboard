@@ -61,9 +61,9 @@ function PostUpdateModal({ task, onClose }: UpdateModalProps) {
     mutationFn: (content: string) => tasksService.addComment(task.id, content),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task-comments', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'mine'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] }); // invalidates kanban + mine
       setMessage('');
-      toast.success('Update posted');
+      toast.success('Update posted — admin can see it on the board');
     },
     onError: () => toast.error('Failed to post update'),
   });
@@ -72,7 +72,7 @@ function PostUpdateModal({ task, onClose }: UpdateModalProps) {
     mutationFn: (status: string) =>
       tasksService.update(task.id, { status: status as Task['status'] }),
     onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'mine'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] }); // invalidates kanban + mine
       setNewStatus(updated.status as string);
       toast.success('Status updated');
     },
