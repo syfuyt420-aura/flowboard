@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, LayoutDashboard, Inbox, ArrowLeft, ShieldCheck, Users } from 'lucide-react';
 import { loginSchema } from '@flowboard/shared';
 import type { z } from 'zod';
 import { authService } from '@/services/auth.service';
@@ -13,10 +13,66 @@ import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import type { UserRole } from '@flowboard/shared';
 
 type LoginFormValues = z.input<typeof loginSchema>;
+type Portal = 'admin' | 'member' | null;
 
-export default function LoginPage() {
+const ADMIN_ROLES: UserRole[] = ['OWNER', 'ADMIN', 'PROJECT_MANAGER'];
+
+/* ── Portal selection ── */
+function PortalSelect({ onSelect }: { onSelect: (p: Portal) => void }) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-sm text-muted-foreground mt-1">Choose how you want to log in</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => onSelect('admin')}
+          className="group flex flex-col items-start gap-3 rounded-lg border-2 border-border p-5 hover:border-primary hover:bg-primary/5 transition-all text-left"
+        >
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">Admin</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              Manage projects, assign tasks & track team progress
+            </p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onSelect('member')}
+          className="group flex flex-col items-start gap-3 rounded-lg border-2 border-border p-5 hover:border-primary hover:bg-primary/5 transition-all text-left"
+        >
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">Member</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              View assigned tasks, post updates & report progress
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Don't have an account?{' '}
+        <Link to="/signup" className="font-semibold text-primary hover:underline underline-offset-2">
+          Sign up free
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+/* ── Login form ── */
+function LoginForm({ portal, onBack }: { portal: Portal; onBack: () => void }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const setUser = useAuthStore(s => s.setUser);
@@ -31,22 +87,64 @@ export default function LoginPage() {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      const user = await authService.login({ ...values, rememberMe });
-      setUser(user);
+      const { user, workspaceRole } = await authService.login({ ...values, rememberMe });
+      setUser(user, workspaceRole);
       queryClient.setQueryData(QUERY_KEYS.auth.me, user);
+
+      const actuallyAdmin = ADMIN_ROLES.includes(workspaceRole);
+
+      if (portal === 'admin' && !actuallyAdmin) {
+        toast.error("You don't have admin access. Redirecting to your task panel.");
+        navigate('/app/my-tasks');
+        return;
+      }
+      if (portal === 'member' && actuallyAdmin) {
+        // Admins can still use member view if they want
+        toast.success(`Logged in as ${user.name.split(' ')[0]}`);
+        navigate('/app/my-tasks');
+        return;
+      }
+
       toast.success(`Welcome back, ${user.name.split(' ')[0]}!`);
-      navigate('/app/dashboard');
+      navigate(actuallyAdmin ? '/app/dashboard' : '/app/my-tasks');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message;
       toast.error(msg ?? 'Invalid email or password');
     }
   };
 
+  const isAdmin = portal === 'admin';
+
   return (
     <div className="space-y-5">
+      {/* Header with portal indicator */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="text-sm text-muted-foreground mt-1">Log in to your FlowBoard account</p>
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Change portal
+        </button>
+
+        <div className={cn(
+          'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-3',
+          isAdmin
+            ? 'bg-primary/10 text-primary'
+            : 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+        )}>
+          {isAdmin
+            ? <><ShieldCheck className="h-3.5 w-3.5" /> Admin Portal</>
+            : <><Users className="h-3.5 w-3.5" /> Member Portal</>
+          }
+        </div>
+
+        <h1 className="text-2xl font-semibold tracking-tight">Log in</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {isAdmin
+            ? 'Access your workspace dashboard and tools'
+            : 'See your tasks and post progress updates'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -92,7 +190,6 @@ export default function LoginPage() {
           {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
 
-        {/* Remember me */}
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -109,31 +206,16 @@ export default function LoginPage() {
               <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               Logging in…
             </span>
-          ) : 'Log in'}
+          ) : (
+            <span className="flex items-center gap-2">
+              {isAdmin
+                ? <><LayoutDashboard className="h-4 w-4" /> Log in as Admin</>
+                : <><Inbox className="h-4 w-4" /> Log in as Member</>
+              }
+            </span>
+          )}
         </Button>
       </form>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-background px-3 text-xs text-muted-foreground">or</span>
-        </div>
-      </div>
-
-      <a
-        href={`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1/auth/google`}
-        className="flex w-full items-center justify-center gap-2.5 rounded border border-border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-      >
-        <svg className="h-4 w-4" viewBox="0 0 24 24">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Continue with Google
-      </a>
 
       <p className="text-center text-sm text-muted-foreground">
         Don't have an account?{' '}
@@ -143,4 +225,14 @@ export default function LoginPage() {
       </p>
     </div>
   );
+}
+
+/* ── Main export ── */
+export default function LoginPage() {
+  const [portal, setPortal] = useState<Portal>(null);
+
+  if (!portal) {
+    return <PortalSelect onSelect={setPortal} />;
+  }
+  return <LoginForm portal={portal} onBack={() => setPortal(null)} />;
 }

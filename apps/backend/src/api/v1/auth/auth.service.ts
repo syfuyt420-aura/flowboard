@@ -44,7 +44,7 @@ export const authService = {
     // Immediately create a session so the user is logged in after signup
     const tokens = await this.createSession(user.id, user.email, user.name, 'MEMBER', ipAddress, userAgent);
 
-    return { user, ...tokens };
+    return { user, workspaceRole: 'MEMBER', ...tokens };
   },
 
   async login(email: string, password: string, ipAddress?: string, userAgent?: string) {
@@ -95,7 +95,7 @@ export const authService = {
     const role = workspaceMember?.role ?? 'MEMBER';
     const tokens = await this.createSession(user.id, user.email, user.name, role, ipAddress, userAgent);
 
-    return { user, ...tokens };
+    return { user, workspaceRole: role, ...tokens };
   },
 
   async createSession(

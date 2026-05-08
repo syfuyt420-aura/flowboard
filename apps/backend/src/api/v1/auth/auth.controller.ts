@@ -36,7 +36,7 @@ export const authController = {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body as { email: string; password: string };
-      const { user, accessToken, refreshToken } = await authService.login(
+      const { user, workspaceRole, accessToken, refreshToken } = await authService.login(
         email,
         password,
         req.ip,
@@ -45,6 +45,7 @@ export const authController = {
       setRefreshCookie(res, refreshToken);
       sendSuccess(res, {
         user,
+        workspaceRole,
         accessToken,
         expiresIn: 15 * 60,
       });

@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/axios';
 import type { Task } from '@flowboard/shared';
 
-const NAV_ITEMS = [
+const ADMIN_NAV = [
   { to: '/app/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/app/my-tasks',    icon: Inbox,           label: 'My Tasks' },
   { to: '/app/projects',    icon: FolderKanban,    label: 'Projects' },
@@ -33,6 +33,12 @@ const NAV_ITEMS = [
   { to: '/app/team',        icon: Users,           label: 'Team' },
   { to: '/app/analytics',   icon: BarChart3,       label: 'Analytics' },
   { to: '/app/automations', icon: Zap,             label: 'Automations' },
+];
+
+const MEMBER_NAV = [
+  { to: '/app/my-tasks',  icon: Inbox,        label: 'My Tasks' },
+  { to: '/app/projects',  icon: FolderKanban, label: 'Projects' },
+  { to: '/app/inbox',     icon: Bell,         label: 'Inbox' },
 ];
 
 function SideTooltip({ label }: { label: string }) {
@@ -48,6 +54,8 @@ function SideTooltip({ label }: { label: string }) {
 
 export default function Sidebar() {
   useTranslation();
+  const isAdmin = useAuthStore(s => s.isAdmin());
+  const NAV_ITEMS = isAdmin ? ADMIN_NAV : MEMBER_NAV;
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const openCommandPalette = useUIStore((s) => s.openCommandPalette);

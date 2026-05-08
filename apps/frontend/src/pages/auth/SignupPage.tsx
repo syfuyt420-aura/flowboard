@@ -64,14 +64,14 @@ export default function SignupPage() {
   const onSubmit = async (values: SignupInput) => {
     try {
       // Signup now returns tokens directly — auto-login
-      const { data } = await api.post<{ data: { user: Parameters<typeof setUser>[0]; accessToken: string } }>(
+      const { data } = await api.post<{ data: { user: Parameters<typeof setUser>[0]; workspaceRole: import('@flowboard/shared').UserRole; accessToken: string } }>(
         '/auth/signup', values
       );
       setAccessToken(data.data.accessToken);
-      setUser(data.data.user);
+      setUser(data.data.user, data.data.workspaceRole ?? 'MEMBER');
       queryClient.setQueryData(QUERY_KEYS.auth.me, data.data.user);
       toast.success(`Welcome to FlowBoard, ${data.data.user?.name?.split(' ')[0] ?? 'there'}! 🎉`);
-      navigate('/app/dashboard');
+      navigate('/app/my-tasks');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message;
       toast.error(msg ?? 'Failed to create account');

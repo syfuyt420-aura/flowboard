@@ -1,5 +1,5 @@
 import { api, setAccessToken, clearAccessToken } from '@/lib/axios';
-import type { User } from '@flowboard/shared';
+import type { User, UserRole } from '@flowboard/shared';
 
 interface LoginPayload {
   email: string;
@@ -16,16 +16,17 @@ interface SignupPayload {
 interface AuthResponse {
   data: {
     user: User;
+    workspaceRole: UserRole;
     accessToken: string;
     expiresIn: number;
   };
 }
 
 export const authService = {
-  async login(payload: LoginPayload): Promise<User> {
+  async login(payload: LoginPayload): Promise<{ user: User; workspaceRole: UserRole }> {
     const { data } = await api.post<AuthResponse>('/auth/login', payload);
     setAccessToken(data.data.accessToken);
-    return data.data.user;
+    return { user: data.data.user, workspaceRole: data.data.workspaceRole };
   },
 
   async signup(payload: SignupPayload): Promise<{ message: string; userId: string }> {
