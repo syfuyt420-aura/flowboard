@@ -34,6 +34,7 @@ const AnalyticsPage = lazy(() => import('@/pages/app/AnalyticsPage'));
 const AutomationsPage = lazy(() => import('@/pages/app/AutomationsPage'));
 const SettingsPage = lazy(() => import('@/pages/app/SettingsPage'));
 const WorkspaceSettingsPage = lazy(() => import('@/pages/app/WorkspaceSettingsPage'));
+const MyTasksPage = lazy(() => import('@/pages/app/MyTasksPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -122,6 +123,7 @@ export default function App() {
               <Route path="automations" element={<AutomationsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="workspace/settings" element={<WorkspaceSettingsPage />} />
+              <Route path="my-tasks" element={<MyTasksPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

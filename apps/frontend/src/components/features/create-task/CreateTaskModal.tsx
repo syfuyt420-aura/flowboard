@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { User, Users, ChevronLeft, Plus, X, Check, Calendar, ArrowRight } from 'lucide-react'
+import { User, Users, ChevronLeft, X, Calendar, ArrowRight, Mail } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -57,10 +57,9 @@ export default function CreateTaskModal({ open, onClose, projectId }: CreateTask
   const [urgency, setUrgency] = useState<Urgency>('medium')
   const [dueDate, setDueDate] = useState('')
   const [assigneeIds, setAssigneeIds] = useState<string[]>([])
-  const [memberSearch, setMemberSearch] = useState('')
-  const [memberDropdownOpen, setMemberDropdownOpen] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
+  const [emailError, setEmailError] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState(projectId ?? '')
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -71,22 +70,12 @@ export default function CreateTaskModal({ open, onClose, projectId }: CreateTask
       setUrgency('medium')
       setDueDate('')
       setAssigneeIds([])
-      setMemberSearch('')
-      setMemberDropdownOpen(false)
+      setEmailInput('')
+      setEmailError('')
       setSelectedProjectId(projectId ?? '')
       setDirection(1)
     }
   }, [open, projectId])
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setMemberDropdownOpen(false)
-      }
-    }
-    if (memberDropdownOpen) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [memberDropdownOpen])
 
   const { data: members = [] } = useQuery<WorkspaceMember[]>({
     queryKey: QUERY_KEYS.workspaces.members(workspaceId ?? ''),
@@ -142,21 +131,31 @@ export default function CreateTaskModal({ open, onClose, projectId }: CreateTask
     setTaskType(null)
   }
 
-  function toggleAssignee(userId: string) {
-    if (taskType === 'individual') {
-      setAssigneeIds((prev) => (prev.includes(userId) ? [] : [userId]))
-      setMemberDropdownOpen(false)
-    } else {
-      setAssigneeIds((prev) =>
-        prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-      )
+  function addByEmail() {
+    const email = emailInput.trim().toLowerCase()
+    if (!email) return
+    const match = members.find((m) => m.user.email.toLowerCase() === email)
+    if (!match) {
+      setEmailError('No workspace member found with this email')
+      return
     }
+    if (assigneeIds.includes(match.userId)) {
+      setEmailError('This person is already added')
+      return
+    }
+    if (taskType === 'individual' && assigneeIds.length >= 1) {
+      // replace existing for individual
+      setAssigneeIds([match.userId])
+    } else {
+      setAssigneeIds((prev) => [...prev, match.userId])
+    }
+    setEmailInput('')
+    setEmailError('')
   }
 
-  const filteredMembers = members.filter((m) =>
-    m.user.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
-    m.user.email.toLowerCase().includes(memberSearch.toLowerCase())
-  )
+  function removeAssignee(userId: string) {
+    setAssigneeIds((prev) => prev.filter((id) => id !== userId))
+  }
 
   const selectedMembers = members.filter((m) => assigneeIds.includes(m.userId))
 
@@ -295,7 +294,7 @@ export default function CreateTaskModal({ open, onClose, projectId }: CreateTask
                         <UserAvatar name={m.user.name} src={m.user.avatarUrl} size="xs" />
                         <span className="text-xs font-medium text-brand-700 dark:text-brand-300">{m.user.name}</span>
                         <button
-                          onClick={() => toggleAssignee(m.userId)}
+                          onClick={() => removeAssignee(m.userId)}
                           className="text-brand-400 hover:text-brand-700 dark:hover:text-brand-200 transition-colors"
                         >
                           <X className="h-3 w-3" />
@@ -305,56 +304,27 @@ export default function CreateTaskModal({ open, onClose, projectId }: CreateTask
                   </div>
                 )}
 
-                {/* Member dropdown */}
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setMemberDropdownOpen((v) => !v)}
-                    className="flex items-center gap-2 rounded-xl border border-dashed border-input px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:border-brand-400 transition-colors w-full"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {taskType === 'individual'
-                      ? selectedMembers.length === 0 ? 'Select a person' : 'Change assignee'
-                      : 'Add a team member'}
-                  </button>
-
-                  {memberDropdownOpen && (
-                    <div className="absolute z-50 mt-1 w-full rounded-xl border bg-popover shadow-lg overflow-hidden">
-                      <div className="p-2 border-b">
-                        <Input
-                          placeholder="Search members…"
-                          value={memberSearch}
-                          onChange={(e) => setMemberSearch(e.target.value)}
-                          className="h-8 text-sm"
-                          autoFocus
-                        />
-                      </div>
-                      <div className="max-h-48 overflow-y-auto">
-                        {filteredMembers.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">No members found</p>
-                        ) : (
-                          filteredMembers.map((m) => {
-                            const selected = assigneeIds.includes(m.userId)
-                            return (
-                              <button
-                                key={m.userId}
-                                onClick={() => toggleAssignee(m.userId)}
-                                className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-accent transition-colors text-left"
-                              >
-                                <UserAvatar name={m.user.name} src={m.user.avatarUrl} size="sm" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{m.user.name}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{m.user.email}</p>
-                                </div>
-                                {selected && <Check className="h-4 w-4 text-brand-500 flex-shrink-0" />}
-                              </button>
-                            )
-                          })
-                        )}
-                      </div>
+                {/* Email input */}
+                {(taskType === 'group' || selectedMembers.length === 0) && (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        placeholder={taskType === 'individual' ? 'Enter email address…' : 'Enter email to add member…'}
+                        value={emailInput}
+                        onChange={(e) => { setEmailInput(e.target.value); setEmailError('') }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addByEmail() } }}
+                        className="pl-9 text-sm"
+                      />
                     </div>
-                  )}
-                </div>
+                    <Button type="button" variant="outline" size="sm" onClick={addByEmail} className="flex-shrink-0">
+                      Add
+                    </Button>
+                  </div>
+                )}
+                {emailError && (
+                  <p className="text-xs text-destructive">{emailError}</p>
+                )}
                 {taskType === 'group' && assigneeIds.length < 2 && (
                   <p className="text-xs text-muted-foreground">Add at least 2 members for a group task</p>
                 )}

@@ -27,6 +27,7 @@
   },
   "navigation": {
     "dashboard": "Panel",
+    "myTasks": "Mis Tareas",
     "projects": "Proyectos",
     "tasks": "Tareas",
     "inbox": "Bandeja",

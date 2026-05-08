@@ -27,6 +27,7 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
+    "myTasks": "My Tasks",
     "projects": "Projects",
     "tasks": "Tasks",
     "inbox": "Inbox",

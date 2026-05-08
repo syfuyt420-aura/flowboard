@@ -12,16 +12,20 @@ import {
   ChevronLeft,
   Plus,
   Search,
+  Inbox,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { tasksService } from '@/services/tasks.service';
 
 const NAV_ITEMS = [
   { to: '/app/dashboard', icon: LayoutDashboard, labelKey: 'navigation.dashboard' },
+  { to: '/app/my-tasks', icon: Inbox, labelKey: 'navigation.myTasks' },
   { to: '/app/projects', icon: FolderKanban, labelKey: 'navigation.projects' },
   { to: '/app/tasks', icon: CheckSquare, labelKey: 'navigation.tasks' },
   { to: '/app/inbox', icon: Bell, labelKey: 'navigation.inbox' },
@@ -38,6 +42,16 @@ export default function Sidebar() {
   const openCreateTask = useUIStore((s) => s.openCreateTask)
   const user = useAuthStore((s) => s.user);
   const location = useLocation();
+
+  const { data: myTasksData } = useQuery({
+    queryKey: ['my-tasks'],
+    queryFn: () => tasksService.list({ assignee: user?.id, limit: 200 }),
+    enabled: !!user?.id,
+    select: (d) => d.data,
+  });
+  const pendingCount = (myTasksData ?? []).filter(
+    (t) => !['DONE'].includes(t.status as string)
+  ).length;
 
   return (
     <motion.aside
@@ -109,35 +123,51 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 space-y-0.5 px-2 overflow-y-auto scrollbar-thin">
-        {NAV_ITEMS.map(({ to, icon: Icon, labelKey }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                collapsed && 'justify-center px-2'
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon
-                  className={cn(
-                    'h-4 w-4 flex-shrink-0',
-                    isActive ? 'text-brand-600' : 'text-muted-foreground'
+        {NAV_ITEMS.map(({ to, icon: Icon, labelKey }) => {
+          const isMyTasks = to === '/app/my-tasks';
+          const badge = isMyTasks && pendingCount > 0 ? pendingCount : null;
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                  collapsed && 'justify-center px-2'
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <div className="relative flex-shrink-0">
+                    <Icon
+                      className={cn(
+                        'h-4 w-4',
+                        isActive ? 'text-brand-600' : 'text-muted-foreground'
+                      )}
+                    />
+                    {badge && collapsed && (
+                      <span className="absolute -top-1 -right-1 h-3.5 w-3.5 flex items-center justify-center rounded-full bg-brand-500 text-white text-[8px] font-bold">
+                        {badge > 9 ? '9+' : badge}
+                      </span>
+                    )}
+                  </div>
+                  {!collapsed && (
+                    <span className="flex-1">{t(labelKey)}</span>
                   )}
-                />
-                {!collapsed && (
-                  <span>{t(labelKey)}</span>
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
+                  {!collapsed && badge && (
+                    <span className="ml-auto text-[10px] font-bold bg-brand-500 text-white rounded-full px-1.5 py-0.5 min-w-[20px] text-center leading-none">
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Quick Create */}
