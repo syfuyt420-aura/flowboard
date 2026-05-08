@@ -321,7 +321,6 @@ model Task {
   blocks      TaskDependency[] @relation("BlockingTask")
   customFields TaskCustomFieldValue[]
   comments    Comment[]
-  activityLogs ActivityLog[]
   timeEntries  TimeEntry[]
   sprintTasks  SprintTask[]
 
@@ -460,7 +459,6 @@ model ActivityLog {
 
   user    User     @relation(fields: [userId], references: [id])
   project Project? @relation(fields: [projectId], references: [id])
-  task    Task?    @relation(fields: [entityId], references: [id], map: "activity_task_fk")
 
   @@index([entityId])
   @@index([entityType])
