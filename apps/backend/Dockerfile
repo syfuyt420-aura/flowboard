@@ -1,6 +1,7 @@
 # ─── Stage 1: Build ──────────────────────────────────────────────────────────
 # Build context must be the monorepo root so @flowboard/shared is accessible
 FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 # Copy workspace manifest files first (layer cache)
@@ -26,6 +27,7 @@ RUN npm run build --workspace=apps/backend
 
 # ─── Stage 2: Production ─────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV=production
 
