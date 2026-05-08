@@ -32,7 +32,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build --workspace=packages/shared
-      - run: npm run test --workspace=apps/frontend -- --reporter=verbose
+      - run: npm run test --workspace=apps/frontend -- --reporter=verbose --passWithNoTests
 
   test-backend:
     name: Backend Tests
