@@ -44,6 +44,27 @@ const TASK_SELECT = {
 };
 
 export const tasksService = {
+  async listMine(userId: string, filters: { status?: string; priority?: string } = {}) {
+    const where: Record<string, unknown> = {
+      deletedAt: null,
+      OR: [
+        { assignees: { some: { userId } } },
+        { createdById: userId },
+      ],
+      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.priority ? { priority: filters.priority } : {}),
+    };
+
+    const tasks = await prisma.task.findMany({
+      where,
+      select: TASK_SELECT,
+      orderBy: [{ createdAt: 'desc' }],
+      take: 200,
+    });
+
+    return tasks.map(taskMapper);
+  },
+
   async list(query: {
     projectId?: string;
     assignee?: string;

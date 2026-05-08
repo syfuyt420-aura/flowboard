@@ -16,6 +16,8 @@ import {
   X,
 } from 'lucide-react';
 import { tasksService } from '@/services/tasks.service';
+import { api } from '@/lib/axios';
+
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -329,9 +331,11 @@ export default function MyTasksPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['tasks', 'mine', user?.id],
-    queryFn: () => tasksService.list({ assignee: user?.id, limit: 200 }),
+    queryFn: async () => {
+      const { data } = await api.get<{ data: Task[] }>('/tasks/mine');
+      return data.data;
+    },
     enabled: !!user?.id,
-    select: (d) => d.data,
     staleTime: 0,
   });
 

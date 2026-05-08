@@ -33,6 +33,15 @@ router.post('/', validateBody(createTaskSchema), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/mine', async (req, res, next) => {
+  try {
+    const userId = (req as unknown as AuthenticatedRequest).user.id;
+    const { status, priority } = req.query as Record<string, string>;
+    const result = await tasksService.listMine(userId, { status, priority });
+    sendSuccess(res, result);
+  } catch (err) { next(err); }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     sendSuccess(res, await tasksService.get(req.params.id));

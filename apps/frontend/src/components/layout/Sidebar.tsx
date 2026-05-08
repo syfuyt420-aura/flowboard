@@ -21,7 +21,8 @@ import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { UserAvatar } from '@/components/ui/avatar';
 import { useTranslation } from 'react-i18next';
-import { tasksService } from '@/services/tasks.service';
+import { api } from '@/lib/axios';
+import type { Task } from '@flowboard/shared';
 
 const NAV_ITEMS = [
   { to: '/app/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
@@ -56,9 +57,11 @@ export default function Sidebar() {
 
   const { data: myTasksData } = useQuery({
     queryKey: ['tasks', 'mine', user?.id],
-    queryFn: () => tasksService.list({ assignee: user?.id, limit: 200 }),
+    queryFn: async () => {
+      const { data } = await api.get<{ data: Task[] }>('/tasks/mine');
+      return data.data;
+    },
     enabled: !!user?.id,
-    select: (d) => d.data,
   });
   const pendingCount = (myTasksData ?? []).filter(
     (t) => !['DONE'].includes(t.status as string)
