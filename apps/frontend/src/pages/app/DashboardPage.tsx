@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   CheckSquare,
@@ -44,6 +45,12 @@ function StatCard({ label, value, icon: Icon, color, loading }: StatCardProps) {
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
+  const isAdmin = useAuthStore((s) => s.isAdmin());
+
+  // Members don't have access to the admin dashboard
+  if (!isAdmin) {
+    return <Navigate to="/app/my-tasks" replace />;
+  }
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: QUERY_KEYS.analytics.dashboard,

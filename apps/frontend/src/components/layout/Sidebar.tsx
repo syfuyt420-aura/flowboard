@@ -140,20 +140,22 @@ export default function Sidebar() {
           {collapsed && <SideTooltip label="Search  ⌘K" />}
         </div>
 
-        {/* New Task */}
-        <div className="relative group">
-          <button
-            onClick={() => openCreateTask()}
-            className={cn(
-              'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-75',
-              collapsed && 'justify-center px-1.5'
-            )}
-          >
-            <Plus className="h-4 w-4 flex-shrink-0" />
-            {!collapsed && <span className="text-[13px]">New Task</span>}
-          </button>
-          {collapsed && <SideTooltip label="New Task" />}
-        </div>
+        {/* New Task — admin only */}
+        {isAdmin && (
+          <div className="relative group">
+            <button
+              onClick={() => openCreateTask()}
+              className={cn(
+                'flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors duration-75',
+                collapsed && 'justify-center px-1.5'
+              )}
+            >
+              <Plus className="h-4 w-4 flex-shrink-0" />
+              {!collapsed && <span className="text-[13px]">New Task</span>}
+            </button>
+            {collapsed && <SideTooltip label="New Task" />}
+          </div>
+        )}
       </div>
 
       {/* Divider */}
