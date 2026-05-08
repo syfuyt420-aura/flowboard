@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
@@ -7,6 +7,8 @@ import AuthLayout from '@/components/layout/AuthLayout';
 import FullPageSpinner from '@/components/shared/FullPageSpinner';
 import ErrorBoundary from '@/components/shared/ErrorBoundary';
 import CommandPalette from '@/components/features/command-palette/CommandPalette';
+import { authService } from '@/services/auth.service';
+import { ACCESS_TOKEN_KEY } from '@/lib/constants';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
@@ -46,6 +48,20 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const setUser = useAuthStore((s) => s.setUser);
+  const [restoring, setRestoring] = useState(true);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!token) { setRestoring(false); return; }
+    authService.getMe()
+      .then((user) => setUser(user))
+      .catch(() => sessionStorage.removeItem(ACCESS_TOKEN_KEY))
+      .finally(() => setRestoring(false));
+  }, [setUser]);
+
+  if (restoring) return <FullPageSpinner />;
+
   return (
     <>
       <Toaster
