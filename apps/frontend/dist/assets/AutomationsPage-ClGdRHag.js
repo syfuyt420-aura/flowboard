@@ -1,0 +1,2 @@
+import{j as t}from"./vendor-query-CnMK_Gj0.js";import"./vendor-react-jMMS6XZ-.js";function e(){return t.jsxs("div",{className:"p-6",children:[t.jsx("h1",{className:"text-2xl font-display font-bold",children:"Automations"}),t.jsx("p",{className:"text-muted-foreground mt-2",children:"Coming soon — implementation in progress."})]})}export{e as default};
+//# sourceMappingURL=AutomationsPage-ClGdRHag.js.map

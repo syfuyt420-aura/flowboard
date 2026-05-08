@@ -1,0 +1,70 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "retry": "Intentar de nuevo",
+    "search": "Buscar",
+    "noResults": "Sin resultados",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar esto?",
+    "thisActionCannotBeUndone": "Esta acción no se puede deshacer."
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "signup": "Crear cuenta",
+    "logout": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "resetPassword": "Restablecer contraseña",
+    "verifyEmail": "Verifica tu correo",
+    "welcomeBack": "Bienvenido de nuevo",
+    "createYourAccount": "Crea tu cuenta"
+  },
+  "navigation": {
+    "dashboard": "Panel",
+    "projects": "Proyectos",
+    "tasks": "Tareas",
+    "inbox": "Bandeja",
+    "team": "Equipo",
+    "analytics": "Analíticas",
+    "automations": "Automatizaciones",
+    "settings": "Configuración"
+  },
+  "projects": {
+    "createProject": "Nuevo Proyecto",
+    "noProjects": "Sin proyectos aún",
+    "noProjectsDesc": "Crea tu primer proyecto para comenzar",
+    "healthScore": "Puntuación de Salud",
+    "status": {
+      "PLANNING": "Planificación",
+      "ACTIVE": "Activo",
+      "ON_HOLD": "En Espera",
+      "COMPLETED": "Completado",
+      "ARCHIVED": "Archivado"
+    }
+  },
+  "tasks": {
+    "createTask": "Nueva Tarea",
+    "noTasks": "Sin tareas aún",
+    "priority": {
+      "P0": "Crítico",
+      "P1": "Alto",
+      "P2": "Medio",
+      "P3": "Bajo",
+      "P4": "Mínimo"
+    },
+    "status": {
+      "BACKLOG": "Backlog",
+      "TODO": "Por Hacer",
+      "IN_PROGRESS": "En Progreso",
+      "IN_REVIEW": "En Revisión",
+      "DONE": "Hecho",
+      "CANCELLED": "Cancelado"
+    }
+  }
+}

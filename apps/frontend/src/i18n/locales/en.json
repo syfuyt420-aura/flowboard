@@ -1,0 +1,70 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "search": "Search",
+    "noResults": "No results found",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "thisActionCannotBeUndone": "This action cannot be undone."
+  },
+  "auth": {
+    "login": "Sign in",
+    "signup": "Create account",
+    "logout": "Sign out",
+    "email": "Email address",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset password",
+    "verifyEmail": "Verify your email",
+    "welcomeBack": "Welcome back",
+    "createYourAccount": "Create your account"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "tasks": "Tasks",
+    "inbox": "Inbox",
+    "team": "Team",
+    "analytics": "Analytics",
+    "automations": "Automations",
+    "settings": "Settings"
+  },
+  "projects": {
+    "createProject": "New Project",
+    "noProjects": "No projects yet",
+    "noProjectsDesc": "Create your first project to get started",
+    "healthScore": "Health Score",
+    "status": {
+      "PLANNING": "Planning",
+      "ACTIVE": "Active",
+      "ON_HOLD": "On Hold",
+      "COMPLETED": "Completed",
+      "ARCHIVED": "Archived"
+    }
+  },
+  "tasks": {
+    "createTask": "New Task",
+    "noTasks": "No tasks yet",
+    "priority": {
+      "P0": "Critical",
+      "P1": "High",
+      "P2": "Medium",
+      "P3": "Low",
+      "P4": "Minimal"
+    },
+    "status": {
+      "BACKLOG": "Backlog",
+      "TODO": "Todo",
+      "IN_PROGRESS": "In Progress",
+      "IN_REVIEW": "In Review",
+      "DONE": "Done",
+      "CANCELLED": "Cancelled"
+    }
+  }
+}

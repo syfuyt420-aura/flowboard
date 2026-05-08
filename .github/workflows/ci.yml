@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --workspace=packages/shared
+      - run: npx tsc --noEmit --project apps/frontend/tsconfig.json
+      - run: npx tsc --noEmit --project apps/backend/tsconfig.json
+
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --workspace=packages/shared
+      - run: npm run test --workspace=apps/frontend -- --reporter=verbose
+
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: flowboard_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/flowboard_test
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: test-access-secret-for-ci-only-32-chars
+      JWT_REFRESH_SECRET: test-refresh-secret-for-ci-only-32-chars
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --workspace=packages/shared
+      - run: npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
+      - run: npm run test --workspace=apps/backend
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Create frontend env
+        run: echo "VITE_API_BASE_URL=https://api.flowboard.app" > apps/frontend/.env
+      - run: npm run build --workspace=packages/shared
+      - run: npm run build --workspace=apps/frontend
