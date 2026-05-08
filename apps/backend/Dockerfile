@@ -16,7 +16,7 @@ COPY packages/shared ./packages/shared
 COPY apps/backend ./apps/backend
 
 # Generate Prisma client
-RUN cd apps/backend && npx prisma generate
+RUN npm run db:generate --workspace=apps/backend
 
 # Build shared package (backend depends on its compiled output)
 RUN npm run build --workspace=packages/shared
