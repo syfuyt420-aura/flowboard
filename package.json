@@ -10,7 +10,8 @@
     "dev": "concurrently \"npm run dev --workspace=apps/frontend\" \"npm run dev --workspace=apps/backend\"",
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/frontend && npm run build --workspace=apps/backend",
     "test": "npm run test --workspace=apps/frontend && npm run test --workspace=apps/backend",
-    "lint": "npm run lint --workspace=apps/frontend && npm run lint --workspace=apps/backend"
+    "lint": "npm run lint --workspace=apps/frontend && npm run lint --workspace=apps/backend",
+    "deploy": "npx vercel --prod && npx vercel alias $(npx vercel ls --json 2>/dev/null | node -e \"const d=require('fs').readFileSync('/dev/stdin','utf8');const a=JSON.parse(d);console.log(a[0]?.url||'')\" 2>/dev/null) flowboard-pied.vercel.app 2>/dev/null || echo 'Run: npx vercel alias <url> flowboard-pied.vercel.app'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
