@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -100,11 +100,25 @@ export default function CreateTaskModal({
       title: '',
       description: '',
       priority: 'P2',
-      status: (defaultStatus as FormValues['status']) ?? 'TODO',
+      status: 'TODO',
       dueDate: '',
       projectId: projectId ?? '',
     },
   })
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        title: '',
+        description: '',
+        priority: 'P2',
+        status: (defaultStatus as FormValues['status']) ?? 'TODO',
+        dueDate: '',
+        projectId: projectId ?? '',
+      })
+      setSelectedAssigneeIds([])
+    }
+  }, [open, projectId, defaultStatus, reset])
 
   const createMutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -123,7 +137,10 @@ export default function CreateTaskModal({
       toast.success('Task created')
       handleClose()
     },
-    onError: () => toast.error('Failed to create task'),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to create task'
+      toast.error(msg)
+    },
   })
 
   function handleClose() {
