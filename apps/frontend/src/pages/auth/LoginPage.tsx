@@ -1,116 +1,130 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Eye, EyeOff } from 'lucide-react';
 import { loginSchema } from '@flowboard/shared';
 import type { z } from 'zod';
-
-type LoginFormValues = z.input<typeof loginSchema>;
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+
+type LoginFormValues = z.input<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const setUser = useAuthStore((s) => s.setUser);
+  const setUser = useAuthStore(s => s.setUser);
   const queryClient = useQueryClient();
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: searchParams.get('email') ?? '', password: '' },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      const user = await authService.login(values);
+      const user = await authService.login({ ...values, rememberMe });
       setUser(user);
       queryClient.setQueryData(QUERY_KEYS.auth.me, user);
-      navigate('/app/dashboard');
       toast.success(`Welcome back, ${user.name.split(' ')[0]}!`);
+      navigate('/app/dashboard');
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error && 'response' in err
-          ? (err as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message
-          : undefined;
+      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message;
       toast.error(msg ?? 'Invalid email or password');
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-display font-bold">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">Sign in to your FlowBoard account</p>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-sm text-muted-foreground mt-1">Log in to your FlowBoard account</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="email">
-            Email address
-          </label>
+          <label className="text-sm font-medium" htmlFor="email">Email address</label>
           <Input
             id="email"
             type="email"
-            placeholder="you@company.com"
+            placeholder="you@example.com"
             autoComplete="email"
+            autoFocus
             {...register('email')}
             className={errors.email ? 'border-destructive' : ''}
           />
-          {errors.email && (
-            <p className="text-xs text-destructive">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
         </div>
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium" htmlFor="password">
-              Password
-            </label>
-            <Link
-              to="/forgot-password"
-              className="text-xs text-brand-500 hover:text-brand-600 hover:underline"
-            >
+            <label className="text-sm font-medium" htmlFor="password">Password</label>
+            <Link to="/forgot-password" className="text-xs text-primary hover:underline underline-offset-2">
               Forgot password?
             </Link>
           </div>
-          <Input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            {...register('password')}
-            className={errors.password ? 'border-destructive' : ''}
-          />
-          {errors.password && (
-            <p className="text-xs text-destructive">{errors.password.message}</p>
-          )}
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              {...register('password')}
+              className={cn('pr-10', errors.password ? 'border-destructive' : '')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
 
-        <Button type="submit" variant="brand" className="w-full" loading={isSubmitting}>
-          Sign in
+        {/* Remember me */}
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={e => setRememberMe(e.target.checked)}
+            className="h-4 w-4 rounded border-border accent-primary"
+          />
+          <span className="text-sm text-muted-foreground">Remember me for 30 days</span>
+        </label>
+
+        <Button type="submit" variant="brand" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              Logging in…
+            </span>
+          ) : 'Log in'}
         </Button>
       </form>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
+          <span className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+        <div className="relative flex justify-center">
+          <span className="bg-background px-3 text-xs text-muted-foreground">or</span>
         </div>
       </div>
 
       <a
         href={`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1/auth/google`}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border bg-background px-4 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+        className="flex w-full items-center justify-center gap-2.5 rounded border border-border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -123,8 +137,8 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-muted-foreground">
         Don't have an account?{' '}
-        <Link to="/signup" className="font-medium text-brand-500 hover:text-brand-600 hover:underline">
-          Create one free
+        <Link to="/signup" className="font-semibold text-primary hover:underline underline-offset-2">
+          Sign up free
         </Link>
       </p>
     </div>

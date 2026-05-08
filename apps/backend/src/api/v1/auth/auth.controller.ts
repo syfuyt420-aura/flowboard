@@ -25,8 +25,11 @@ export const authController = {
   async signup(req: Request, res: Response, next: NextFunction) {
     try {
       const { name, email, password } = req.body as { name: string; email: string; password: string };
-      const result = await authService.signup(name, email, password);
-      sendSuccess(res, result, 201);
+      const { user, accessToken, refreshToken } = await authService.signup(
+        name, email, password, req.ip, req.get('user-agent')
+      );
+      setRefreshCookie(res, refreshToken);
+      sendSuccess(res, { user, accessToken, expiresIn: 15 * 60 }, 201);
     } catch (err) { next(err); }
   },
 

@@ -31,32 +31,20 @@ function signRefreshToken(sessionId: string): string {
 }
 
 export const authService = {
-  async signup(name: string, email: string, password: string) {
+  async signup(name: string, email: string, password: string, ipAddress?: string, userAgent?: string) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) throw AppError.conflict('Email already registered');
 
     const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
+    // Auto-activate: no email verification required
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, status: 'PENDING_VERIFICATION' },
+      data: { name, email, passwordHash, status: 'ACTIVE' },
     });
 
-    const verifyToken = uuidv4();
-    await prisma.verificationToken.create({
-      data: {
-        userId: user.id,
-        token: verifyToken,
-        type: 'EMAIL_VERIFICATION',
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
+    // Immediately create a session so the user is logged in after signup
+    const tokens = await this.createSession(user.id, user.email, user.name, 'MEMBER', ipAddress, userAgent);
 
-    await emailQueue.add('verify-email', {
-      to: email,
-      name,
-      token: verifyToken,
-    });
-
-    return { userId: user.id, message: 'Account created. Check your email to verify.' };
+    return { user, ...tokens };
   },
 
   async login(email: string, password: string, ipAddress?: string, userAgent?: string) {
