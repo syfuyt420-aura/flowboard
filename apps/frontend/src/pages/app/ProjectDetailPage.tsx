@@ -8,6 +8,7 @@ import {
   CalendarDays,
   GitFork,
   BarChart3,
+  MessageSquare,
   Settings,
   Star,
   Share2,
@@ -63,12 +64,13 @@ export default function ProjectDetailPage() {
   });
 
   const views = [
-    { label: 'Board', icon: LayoutGrid, path: 'board' },
-    { label: 'List', icon: List, path: 'list' },
-    { label: 'Table', icon: Table2, path: 'table' },
-    { label: 'Calendar', icon: CalendarDays, path: 'calendar' },
-    { label: 'Timeline', icon: GitFork, path: 'timeline' },
-    { label: 'Analytics', icon: BarChart3, path: 'analytics' },
+    { label: 'Board',     icon: LayoutGrid,    path: 'board' },
+    { label: 'List',      icon: List,          path: 'list' },
+    { label: 'Table',     icon: Table2,        path: 'table' },
+    { label: 'Calendar',  icon: CalendarDays,  path: 'calendar' },
+    { label: 'Timeline',  icon: GitFork,       path: 'timeline' },
+    { label: 'Analytics', icon: BarChart3,     path: 'analytics' },
+    { label: 'Updates',   icon: MessageSquare, path: 'updates' },
   ];
 
   if (isLoading) {

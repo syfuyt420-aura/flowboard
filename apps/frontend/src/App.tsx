@@ -35,6 +35,7 @@ const AutomationsPage = lazy(() => import('@/pages/app/AutomationsPage'));
 const SettingsPage = lazy(() => import('@/pages/app/SettingsPage'));
 const WorkspaceSettingsPage = lazy(() => import('@/pages/app/WorkspaceSettingsPage'));
 const MyTasksPage = lazy(() => import('@/pages/app/MyTasksPage'));
+const ProjectUpdatesPage = lazy(() => import('@/pages/app/ProjectUpdatesPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -116,6 +117,7 @@ export default function App() {
                 <Route path="timeline" element={<TimelinePage />} />
                 <Route path="analytics" element={<ProjectAnalyticsPage />} />
                 <Route path="settings" element={<ProjectSettingsPage />} />
+                <Route path="updates" element={<ProjectUpdatesPage />} />
               </Route>
               <Route path="tasks/:id" element={<TaskDetailPage />} />
               <Route path="team" element={<TeamPage />} />
