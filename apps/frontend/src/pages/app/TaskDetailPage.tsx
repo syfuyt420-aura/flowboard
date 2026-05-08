@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -19,15 +19,18 @@ import {
   ExternalLink,
   Trash2,
   AlertTriangle,
+  Plus,
 } from 'lucide-react';
 import { tasksService } from '@/services/tasks.service';
+import { api } from '@/lib/axios';
 import { QUERY_KEYS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { UserAvatar } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores/authStore';
-import type { Task, Comment, ActivityLog } from '@flowboard/shared';
+import { useUIStore } from '@/stores/uiStore';
+import type { Task, Comment, ActivityLog, WorkspaceMember } from '@flowboard/shared';
 import { cn } from '@/lib/utils';
 
 const STATUS_OPTIONS = [
@@ -128,6 +131,7 @@ export default function TaskDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const workspaceId = useUIStore((s) => s.activeWorkspaceId);
 
   const [tab, setTab] = useState<Tab>('overview');
   const [editingTitle, setEditingTitle] = useState(false);
@@ -137,6 +141,8 @@ export default function TaskDetailPage() {
   const [commentText, setCommentText] = useState('');
   const [statusOpen, setStatusOpen] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [assigneePickerOpen, setAssigneePickerOpen] = useState(false);
+  const assigneePickerRef = useRef<HTMLDivElement>(null);
 
   const { data: task, isLoading } = useQuery<Task>({
     queryKey: QUERY_KEYS.tasks.detail(id!),
@@ -155,6 +161,29 @@ export default function TaskDetailPage() {
     queryFn: () => tasksService.getActivity(id!),
     enabled: !!id && tab === 'activity',
   });
+
+  const { data: workspaceMembers = [] } = useQuery<WorkspaceMember[]>({
+    queryKey: QUERY_KEYS.workspaces.members(workspaceId ?? ''),
+    queryFn: async () => {
+      const { data } = await api.get<{ data: WorkspaceMember[] }>(
+        `/workspaces/${workspaceId}/members`
+      );
+      return data.data;
+    },
+    enabled: !!workspaceId,
+  });
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (assigneePickerRef.current && !assigneePickerRef.current.contains(e.target as Node)) {
+        setAssigneePickerOpen(false);
+      }
+    }
+    if (assigneePickerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [assigneePickerOpen]);
 
   const updateMutation = useMutation({
     mutationFn: (payload: Partial<Task>) => tasksService.update(id!, payload),
@@ -505,17 +534,75 @@ export default function TaskDetailPage() {
         {/* Right sidebar — assignees & meta */}
         <aside className="w-60 flex-shrink-0 border-l px-4 py-6 space-y-6 overflow-y-auto hidden lg:block">
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
-              <Users className="h-3 w-3" /> Assignees
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Users className="h-3 w-3" /> Assignees
+              </p>
+              <div className="relative" ref={assigneePickerRef}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setAssigneePickerOpen((o) => !o)}
+                  title="Add assignee"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+                {assigneePickerOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-20 bg-popover border rounded-xl shadow-lg py-1 w-48 max-h-56 overflow-y-auto">
+                    {workspaceMembers.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">No members</p>
+                    )}
+                    {workspaceMembers.map((m) => {
+                      const currentIds = (
+                        task.assignees as Array<{ userId: string }> | undefined ?? []
+                      ).map((a) => a.userId);
+                      const isAssigned = currentIds.includes(m.userId);
+                      return (
+                        <button
+                          key={m.userId}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors"
+                          onClick={() => {
+                            const newIds = isAssigned
+                              ? currentIds.filter((id) => id !== m.userId)
+                              : [...currentIds, m.userId];
+                            updateMutation.mutate({ assigneeIds: newIds } as Partial<Task>);
+                            setAssigneePickerOpen(false);
+                          }}
+                        >
+                          <UserAvatar name={m.user.name} src={m.user.avatarUrl} size="xs" />
+                          <span className="flex-1 text-left truncate">{m.user.name}</span>
+                          {isAssigned && <Check className="h-3 w-3 text-brand-500 flex-shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
             {task.assignees && task.assignees.length > 0 ? (
               <div className="space-y-2">
-                {(task.assignees as Array<{ userId: string; user: { name: string; avatarUrl?: string | null } }>).map((a) => (
-                  <div key={a.userId} className="flex items-center gap-2">
-                    <UserAvatar name={a.user.name} src={a.user.avatarUrl} size="sm" />
-                    <span className="text-sm">{a.user.name}</span>
-                  </div>
-                ))}
+                {(task.assignees as Array<{ userId: string; user: { name: string; avatarUrl?: string | null } }>).map((a) => {
+                  const currentIds = (
+                    task.assignees as Array<{ userId: string }> | undefined ?? []
+                  ).map((x) => x.userId);
+                  return (
+                    <div key={a.userId} className="flex items-center gap-2 group">
+                      <UserAvatar name={a.user.name} src={a.user.avatarUrl} size="sm" />
+                      <span className="text-sm flex-1 truncate">{a.user.name}</span>
+                      <button
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                        title="Remove assignee"
+                        onClick={() => {
+                          updateMutation.mutate({
+                            assigneeIds: currentIds.filter((id) => id !== a.userId),
+                          } as Partial<Task>);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground/60">No assignees</p>

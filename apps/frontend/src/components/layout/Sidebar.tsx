@@ -34,7 +34,8 @@ export default function Sidebar() {
   const { t } = useTranslation();
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
-  const openCommandPalette = useUIStore((s) => s.openCommandPalette);
+  const openCommandPalette = useUIStore((s) => s.openCommandPalette)
+  const openCreateTask = useUIStore((s) => s.openCreateTask)
   const user = useAuthStore((s) => s.user);
   const location = useLocation();
 
@@ -145,7 +146,7 @@ export default function Sidebar() {
           variant="brand"
           size={collapsed ? 'icon' : 'default'}
           className="w-full"
-          onClick={openCommandPalette}
+          onClick={() => openCreateTask()}
         >
           <Plus className="h-4 w-4" />
           {!collapsed && <span className="ml-2">New Task</span>}

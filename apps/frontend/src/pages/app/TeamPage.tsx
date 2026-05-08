@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, Mail, Shield, Crown, MoreHorizontal, UserPlus } from 'lucide-react';
 import { api } from '@/lib/axios';
@@ -82,6 +83,7 @@ function MemberCard({ member, index }: { member: WorkspaceMember; index: number 
 }
 
 export default function TeamPage() {
+  const navigate = useNavigate();
   const workspaceId = useUIStore((s) => s.activeWorkspaceId);
 
   const { data: members = [], isLoading } = useQuery<WorkspaceMember[]>({
@@ -122,7 +124,7 @@ export default function TeamPage() {
             {members.length} member{members.length !== 1 ? 's' : ''} in this workspace
           </p>
         </div>
-        <Button variant="brand" size="sm">
+        <Button variant="brand" size="sm" onClick={() => navigate('/app/workspace/settings')}>
           <UserPlus className="h-4 w-4 mr-1.5" />
           Invite member
         </Button>

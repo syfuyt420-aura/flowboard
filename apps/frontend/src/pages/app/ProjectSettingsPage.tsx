@@ -6,8 +6,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle } from 'lucide-react'
+import { Trash2, AlertTriangle, UserPlus, X } from 'lucide-react'
 import { projectsService } from '@/services/projects.service'
+import { api } from '@/lib/axios'
+import { useUIStore } from '@/stores/uiStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -51,11 +53,18 @@ const editSchema = z.object({
 
 type EditValues = z.infer<typeof editSchema>
 
+interface WorkspaceMember {
+  role: string
+  user: { id: string; name: string; email: string; avatarUrl: string | null }
+}
+
 export default function ProjectSettingsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showAddMember, setShowAddMember] = useState(false)
+  const workspaceId = useUIStore((s) => s.activeWorkspaceId)
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -68,6 +77,40 @@ export default function ProjectSettingsPage() {
     queryFn: () => projectsService.getMembers(id!),
     enabled: !!id,
   })
+
+  const { data: workspaceMembers = [] } = useQuery<WorkspaceMember[]>({
+    queryKey: ['workspace-members', workspaceId],
+    queryFn: async () => {
+      const { data } = await api.get(`/workspaces/${workspaceId}/members`)
+      return data.data
+    },
+    enabled: !!workspaceId && showAddMember,
+  })
+
+  const addMemberMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      api.post(`/projects/${id}/members`, { userId, role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-members', id] })
+      toast.success('Member added')
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to add member'
+      toast.error(msg)
+    },
+  })
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (userId: string) => api.delete(`/projects/${id}/members/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-members', id] })
+      toast.success('Member removed')
+    },
+    onError: () => toast.error('Failed to remove member'),
+  })
+
+  const memberUserIds = new Set(members.map((m) => m.user.id))
+  const availableToAdd = workspaceMembers.filter((wm) => !memberUserIds.has(wm.user.id))
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isDirty } } = useForm<EditValues>({
     resolver: zodResolver(editSchema),
@@ -225,16 +268,49 @@ export default function ProjectSettingsPage() {
         transition={{ delay: 0.1 }}
         className="space-y-4"
       >
-        <div>
-          <h3 className="text-base font-semibold">Members</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">{members.length} member{members.length !== 1 ? 's' : ''}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold">Members</h3>
+            <p className="text-sm text-muted-foreground mt-0.5">{members.length} member{members.length !== 1 ? 's' : ''}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowAddMember((v) => !v)}>
+            <UserPlus className="h-4 w-4 mr-1.5" />
+            Add Member
+          </Button>
         </div>
+
+        {showAddMember && (
+          <div className="rounded-xl border p-3 bg-muted/30 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Workspace members not in project:</p>
+            {availableToAdd.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-3">All workspace members are already in this project.</p>
+            )}
+            {availableToAdd.map((wm) => (
+              <div key={wm.user.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent transition-colors">
+                <UserAvatar name={wm.user.name} src={wm.user.avatarUrl} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{wm.user.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{wm.user.email}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addMemberMutation.mutate({ userId: wm.user.id, role: 'MEMBER' })}
+                  disabled={addMemberMutation.isPending}
+                >
+                  Add
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="rounded-xl border divide-y">
           {members.length === 0 && (
             <p className="text-sm text-muted-foreground px-4 py-6 text-center">No members found.</p>
           )}
           {members.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 px-4 py-3">
+            <div key={m.user.id} className="flex items-center gap-3 px-4 py-3 group">
               <UserAvatar name={m.user.name} src={m.user.avatarUrl} size="sm" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{m.user.name}</p>
@@ -243,6 +319,15 @@ export default function ProjectSettingsPage() {
               <Badge variant={ROLE_VARIANT[m.role] ?? 'outline'}>
                 {m.role.replace('_', ' ')}
               </Badge>
+              {m.role !== 'OWNER' && (
+                <button
+                  onClick={() => removeMemberMutation.mutate(m.user.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive ml-1"
+                  title="Remove member"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -239,6 +239,61 @@ export const projectsService = {
     });
   },
 
+  async addMember(projectId: string, userId: string, role: string, requestingUserId: string) {
+    const requester = await prisma.projectMember.findFirst({
+      where: { projectId, userId: requestingUserId },
+    });
+    if (!requester || !['OWNER', 'ADMIN', 'PROJECT_MANAGER'].includes(requester.role)) {
+      throw AppError.forbidden('Insufficient permissions to add members');
+    }
+    const existing = await prisma.projectMember.findFirst({ where: { projectId, userId } });
+    if (existing) throw AppError.conflict('User is already a project member');
+
+    return prisma.projectMember.create({
+      data: { projectId, userId, role: role as 'MEMBER' },
+      select: {
+        role: true,
+        joinedAt: true,
+        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      },
+    });
+  },
+
+  async removeMember(projectId: string, userId: string, requestingUserId: string) {
+    const requester = await prisma.projectMember.findFirst({
+      where: { projectId, userId: requestingUserId },
+    });
+    if (!requester || !['OWNER', 'ADMIN'].includes(requester.role)) {
+      throw AppError.forbidden('Insufficient permissions to remove members');
+    }
+    const target = await prisma.projectMember.findFirst({ where: { projectId, userId } });
+    if (!target) throw AppError.notFound('Project member');
+    if (target.role === 'OWNER') throw AppError.badRequest('Cannot remove the project owner');
+
+    await prisma.projectMember.deleteMany({ where: { projectId, userId } });
+  },
+
+  async updateMemberRole(projectId: string, userId: string, role: string, requestingUserId: string) {
+    const requester = await prisma.projectMember.findFirst({
+      where: { projectId, userId: requestingUserId },
+    });
+    if (!requester || requester.role !== 'OWNER') {
+      throw AppError.forbidden('Only the project owner can change roles');
+    }
+    const target = await prisma.projectMember.findFirst({ where: { projectId, userId } });
+    if (!target) throw AppError.notFound('Project member');
+    if (target.role === 'OWNER') throw AppError.badRequest('Cannot change owner role');
+
+    return prisma.projectMember.update({
+      where: { id: target.id },
+      data: { role: role as 'MEMBER' },
+      select: {
+        role: true,
+        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      },
+    });
+  },
+
   async recalcHealthScore(projectId: string) {
     const [taskCount, completedCount] = await Promise.all([
       prisma.task.count({ where: { projectId, deletedAt: null } }),

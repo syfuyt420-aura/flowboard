@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useUIStore } from '@/stores/uiStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -263,6 +264,7 @@ export default function KanbanPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const openCreateTask = useUIStore((s) => s.openCreateTask);
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [localTasks, setLocalTasks] = useState<Task[] | null>(null);
@@ -385,7 +387,7 @@ export default function KanbanPage() {
         <Button
           variant="brand"
           size="sm"
-          onClick={() => navigate(`/app/projects/${projectId}/board?new=1`)}
+          onClick={() => openCreateTask(projectId ?? undefined)}
         >
           <Plus className="h-4 w-4 mr-1.5" />
           Add Task
@@ -407,7 +409,7 @@ export default function KanbanPage() {
                 key={col}
                 status={col}
                 tasks={columnTasks[col] ?? []}
-                onAddTask={() => toast.info(`Creating task in ${COLUMN_CONFIG[col]?.label}`)}
+                onAddTask={() => openCreateTask(projectId ?? undefined)}
                 onTaskClick={(taskId) => navigate(`/app/tasks/${taskId}`)}
               />
             ))}

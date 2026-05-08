@@ -9,6 +9,7 @@ import { useSocketStore } from '@/stores/socketStore';
 import { useUIStore } from '@/stores/uiStore';
 import { ACCESS_TOKEN_KEY } from '@/lib/constants';
 import { workspaceService } from '@/services/workspace.service';
+import CreateTaskModal from '@/components/features/create-task/CreateTaskModal';
 
 export default function AppShell() {
   const user = useAuthStore((s) => s.user);
@@ -16,6 +17,9 @@ export default function AppShell() {
   const disconnect = useSocketStore((s) => s.disconnect);
   const activeWorkspaceId = useUIStore((s) => s.activeWorkspaceId);
   const setActiveWorkspaceId = useUIStore((s) => s.setActiveWorkspaceId);
+  const isCreateTaskOpen = useUIStore((s) => s.isCreateTaskOpen);
+  const createTaskProjectId = useUIStore((s) => s.createTaskProjectId);
+  const closeCreateTask = useUIStore((s) => s.closeCreateTask);
   const location = useLocation();
 
   useEffect(() => {
@@ -58,6 +62,11 @@ export default function AppShell() {
           </ErrorBoundary>
         </main>
       </div>
+      <CreateTaskModal
+        open={isCreateTaskOpen}
+        onClose={closeCreateTask}
+        projectId={createTaskProjectId ?? undefined}
+      />
     </div>
   );
 }

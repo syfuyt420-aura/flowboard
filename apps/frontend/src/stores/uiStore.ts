@@ -8,12 +8,16 @@ interface UIState {
   sidebarCollapsed: boolean;
   commandPaletteOpen: boolean;
   activeWorkspaceId: string | null;
+  isCreateTaskOpen: boolean;
+  createTaskProjectId: string | null;
   setTheme: (theme: Theme) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (value: boolean) => void;
   openCommandPalette: () => void;
   closeCommandPalette: () => void;
   setActiveWorkspaceId: (id: string | null) => void;
+  openCreateTask: (projectId?: string) => void;
+  closeCreateTask: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -23,6 +27,8 @@ export const useUIStore = create<UIState>()(
       sidebarCollapsed: false,
       commandPaletteOpen: false,
       activeWorkspaceId: null,
+      isCreateTaskOpen: false,
+      createTaskProjectId: null,
       setTheme: (theme) => {
         set({ theme });
         applyTheme(theme);
@@ -32,6 +38,8 @@ export const useUIStore = create<UIState>()(
       openCommandPalette: () => set({ commandPaletteOpen: true }),
       closeCommandPalette: () => set({ commandPaletteOpen: false }),
       setActiveWorkspaceId: (id) => set({ activeWorkspaceId: id }),
+      openCreateTask: (projectId) => set({ isCreateTaskOpen: true, createTaskProjectId: projectId ?? null }),
+      closeCreateTask: () => set({ isCreateTaskOpen: false, createTaskProjectId: null }),
     }),
     {
       name: 'fb-ui',
