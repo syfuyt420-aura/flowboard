@@ -7,7 +7,8 @@ export type NotificationType =
   | 'TASK_STATUS_CHANGED'
   | 'PROJECT_INVITE'
   | 'WORKSPACE_INVITE'
-  | 'PROJECT_COMPLETED';
+  | 'PROJECT_COMPLETED'
+  | 'MEMBER_UPDATE';
 
 export interface Notification {
   id: string;

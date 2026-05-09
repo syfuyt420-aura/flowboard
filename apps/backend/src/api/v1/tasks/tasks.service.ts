@@ -180,6 +180,20 @@ export const tasksService = {
           data: input.assigneeIds.map((uid) => ({ taskId: t.id, userId: uid })),
           skipDuplicates: true,
         });
+        // Notify each assignee (skip creator)
+        const assigneesToNotify = input.assigneeIds.filter((uid) => uid !== userId);
+        if (assigneesToNotify.length) {
+          await tx.notification.createMany({
+            data: assigneesToNotify.map((uid) => ({
+              userId: uid,
+              type: 'TASK_ASSIGNED',
+              title: 'You have been assigned a task',
+              message: `"${input.title}" has been assigned to you.`,
+              actionUrl: `/app/tasks/${t.id}`,
+              metadata: { taskId: t.id, taskTitle: input.title },
+            })),
+          });
+        }
       }
 
       if (input.labelIds?.length) {
@@ -232,6 +246,35 @@ export const tasksService = {
         if (input.assigneeIds.length > 0) {
           await tx.taskAssignee.createMany({
             data: input.assigneeIds.map((uid) => ({ taskId: id, userId: uid })),
+          });
+          const newAssignees = input.assigneeIds.filter((uid) => uid !== userId);
+          if (newAssignees.length) {
+            await tx.notification.createMany({
+              data: newAssignees.map((uid) => ({
+                userId: uid,
+                type: 'TASK_ASSIGNED',
+                title: 'You have been assigned a task',
+                message: `"${t.title}" has been assigned to you.`,
+                actionUrl: `/app/tasks/${id}`,
+                metadata: { taskId: id, taskTitle: t.title },
+              })),
+            });
+          }
+        }
+      }
+
+      if (input.status && input.status !== task.status) {
+        // Notify task creator if someone else changed the status
+        if (task.createdById && task.createdById !== userId) {
+          await tx.notification.create({
+            data: {
+              userId: task.createdById,
+              type: 'TASK_STATUS_CHANGED',
+              title: 'Task status updated',
+              message: `"${t.title}" status changed to ${input.status.replace('_', ' ')}.`,
+              actionUrl: `/app/tasks/${id}`,
+              metadata: { taskId: id, taskTitle: t.title, newStatus: input.status },
+            },
           });
         }
       }
@@ -310,8 +353,15 @@ export const tasksService = {
   },
 
   async addComment(taskId: string, content: string, userId: string, parentId?: string) {
-    const task = await prisma.task.findFirst({ where: { id: taskId, deletedAt: null } });
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, deletedAt: null },
+      include: {
+        assignees: { select: { userId: true } },
+      },
+    });
     if (!task) throw AppError.notFound('Task');
+
+    const commenter = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
 
     const comment = await prisma.comment.create({
       data: { taskId, content, authorId: userId, parentId },
@@ -327,6 +377,27 @@ export const tasksService = {
         reactions: { select: { emoji: true, userId: true } },
       },
     });
+
+    // Notify task creator + assignees (skip commenter)
+    const notifyIds = [
+      ...new Set([
+        task.createdById,
+        ...task.assignees.map((a) => a.userId),
+      ]),
+    ].filter((id) => id !== userId);
+
+    if (notifyIds.length) {
+      await prisma.notification.createMany({
+        data: notifyIds.map((uid) => ({
+          userId: uid,
+          type: 'TASK_COMMENTED',
+          title: `${commenter?.name ?? 'Someone'} commented on a task`,
+          message: `"${content.slice(0, 100)}"`,
+          actionUrl: `/app/tasks/${taskId}`,
+          metadata: { taskId, commentId: comment.id, commenterName: commenter?.name },
+        })),
+      });
+    }
 
     await prisma.activityLog.create({
       data: {

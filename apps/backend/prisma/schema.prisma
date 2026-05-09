@@ -65,6 +65,7 @@ enum NotificationType {
   PROJECT_INVITE
   WORKSPACE_INVITE
   PROJECT_COMPLETED
+  MEMBER_UPDATE
 }
 
 enum AutomationTrigger {
